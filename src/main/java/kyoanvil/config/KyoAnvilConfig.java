@@ -3,6 +3,7 @@ package kyoanvil.config;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import net.fabricmc.loader.api.FabricLoader;
+
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
@@ -10,29 +11,29 @@ import java.io.IOException;
 
 public class KyoAnvilConfig {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
-    private static final File CONFIG_FILE = new File(FabricLoader.getInstance().getConfigDir().toFile(), "kyo_anvil.json");
+    private static final File FILE = new File(FabricLoader.getInstance().getConfigDir().toFile(), "kyo_anvil.json");
 
-    // === CẤU HÌNH SỬA ĐỒ TRONG GIAO DIỆN ĐE (Slot GUI) ===
-    public int repairCostLevelAmount = 1;       // Giá Level XP cố định mỗi lần sửa/đổi tên
-    public int repairCostMaterialAmount = 1;    // Số lượng nguyên liệu tốn cố định cho 1 lần sửa (Mặc định: 1)
-    public float percentRepairedPerAction = 0.3333f; // % Độ bền hồi phục cho mỗi lần gõ (0.3333 = 33.33%)
+    public static int maxRepairCost = 39;
+    public static float anvilDamageChance = 0.02f;
+    public static boolean enableColorRename = true;
+    public static boolean enableIronIngotRepair = true;
 
-    // === CẤU HÌNH THẾ GIỚI KHỐI BLOCK ===
-    public float anvilBreakChance = 0.02f;      // Tỉ lệ đe bị nứt/vỡ khi gõ đồ (0.02 = 2%)
-    public boolean allowColorCodes = true;      // Cho phép dùng mã màu '&' khi đổi tên
-    public boolean allowAnvilRestoration = true; // Cho phép đập Khối Sắt (Iron Block) ngoài đời để vá Đe bị nứt
-
-    // === CẤU HÌNH LỆNH (COMMANDS) ===
-    public String colorCommandAlias = "color"; // Người chơi gõ /color để xem bảng màu (Có thể đổi thành 'color', 'huongdan')
-
-    public static KyoAnvilConfig INSTANCE = new KyoAnvilConfig();
+    // Thêm cấu hình alias cho lệnh xem màu sắc
+    public static String colorCommandAlias = "mausac";
 
     public static void load() {
-        if (CONFIG_FILE.exists()) {
-            try (FileReader reader = new FileReader(CONFIG_FILE)) {
-                INSTANCE = GSON.fromJson(reader, KyoAnvilConfig.class);
+        if (FILE.exists()) {
+            try (FileReader reader = new FileReader(FILE)) {
+                ConfigData data = GSON.fromJson(reader, ConfigData.class);
+                if (data != null) {
+                    maxRepairCost = data.maxRepairCost;
+                    anvilDamageChance = data.anvilDamageChance;
+                    enableColorRename = data.enableColorRename;
+                    enableIronIngotRepair = data.enableIronIngotRepair;
+                    if (data.colorCommandAlias != null) colorCommandAlias = data.colorCommandAlias;
+                }
             } catch (IOException e) {
-                e.printStackTrace();
+                System.out.println("[KyoAnvil] Lỗi đọc file config!");
             }
         } else {
             save();
@@ -40,10 +41,24 @@ public class KyoAnvilConfig {
     }
 
     public static void save() {
-        try (FileWriter writer = new FileWriter(CONFIG_FILE)) {
-            GSON.toJson(INSTANCE, writer);
+        try (FileWriter writer = new FileWriter(FILE)) {
+            ConfigData data = new ConfigData();
+            data.maxRepairCost = maxRepairCost;
+            data.anvilDamageChance = anvilDamageChance;
+            data.enableColorRename = enableColorRename;
+            data.enableIronIngotRepair = enableIronIngotRepair;
+            data.colorCommandAlias = colorCommandAlias;
+            GSON.toJson(data, writer);
         } catch (IOException e) {
-            e.printStackTrace();
+            System.out.println("[KyoAnvil] Lỗi lưu file config!");
         }
+    }
+
+    private static class ConfigData {
+        int maxRepairCost = KyoAnvilConfig.maxRepairCost;
+        float anvilDamageChance = KyoAnvilConfig.anvilDamageChance;
+        boolean enableColorRename = KyoAnvilConfig.enableColorRename;
+        boolean enableIronIngotRepair = KyoAnvilConfig.enableIronIngotRepair;
+        String colorCommandAlias = KyoAnvilConfig.colorCommandAlias;
     }
 }

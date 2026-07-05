@@ -12,15 +12,16 @@ public class KyoColorCommand {
 
         // 1. Luôn luôn đăng ký lệnh gốc cố định (Để Admin yên tâm dùng dù config bị đổi)
         dispatcher.register(Commands.literal("kyocolor")
-                .executes(context -> showColorHelp(context.getSource()))
+            .executes(context -> showColorHelp(context.getSource()))
         );
 
         // 2. Đăng ký lệnh phụ (Alias) lấy từ file Config
         // Lệnh này có thể tùy biến thành "mausac", "huongdan", "color"
-        String alias = KyoAnvilConfig.INSTANCE.colorCommandAlias;
+        String alias = KyoAnvilConfig.colorCommandAlias; // CHỈ GỌI TRỰC TIẾP TÊN BIẾN TĨNH
+
         if (alias != null && !alias.isEmpty() && !alias.equalsIgnoreCase("kyocolor")) {
             dispatcher.register(Commands.literal(alias)
-                    .executes(context -> showColorHelp(context.getSource()))
+                .executes(context -> showColorHelp(context.getSource()))
             );
         }
     }

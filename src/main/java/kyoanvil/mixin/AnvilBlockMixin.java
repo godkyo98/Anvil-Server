@@ -23,16 +23,13 @@ public abstract class AnvilBlockMixin {
         // Tạo một Random để giả lập cơ chế tung xí ngầu của Minecraft
         Random random = new Random();
 
-        // Lấy tỉ lệ vỡ đe từ file Config của bạn (Ví dụ: 0.02f = 2%)
-        float breakChance = KyoAnvilConfig.INSTANCE.anvilBreakChance;
+        // Lấy tỉ lệ vỡ đe từ file Config của bạn (Gọi trực tiếp biến static anvilDamageChance)
+        float breakChance = KyoAnvilConfig.anvilDamageChance;
 
         // Nếu xí ngầu "may mắn" (không rơi vào tỉ lệ vỡ)
         if (random.nextFloat() >= breakChance) {
-            // Trả về chính BlockState hiện tại (Đe giữ nguyên trạng thái, KHÔNG bị nứt thêm)
+            // Trả về state y nguyên (Hủy việc sát thương đe)
             cir.setReturnValue(state);
-            cir.cancel(); // Dừng ngay hàm của Vanilla lại
         }
-
-        // Ngược lại, nếu xí ngầu rủi ro (< breakChance), ta để hàm Vanilla tự chạy tiếp để đe nứt bình thường!
     }
 }

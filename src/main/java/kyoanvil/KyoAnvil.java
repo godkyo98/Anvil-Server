@@ -1,103 +1,54 @@
 package kyoanvil;
 
-import com.mojang.brigadier.CommandDispatcher;
-import kyoanvil.command.KyoColorCommand;
-import kyoanvil.config.KyoAnvilConfig;
 import net.fabricmc.api.ModInitializer;
-import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
-import net.minecraft.commands.CommandSourceStack;
-import net.minecraft.commands.Commands;
-import net.minecraft.network.chat.Component;
+import net.minecraft.core.BlockPos;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionResult;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.AnvilBlock;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import kyoanvil.config.KyoAnvilConfig;
 
 public class KyoAnvil implements ModInitializer {
-
-	// Khai báo ID và Bộ ghi log (Logger) chuẩn của Fabric
-	public static final String MOD_ID = "kyoanvil";
-	public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
-
 	@Override
 	public void onInitialize() {
-		LOGGER.info("[Kyo Anvil] Đang khởi tạo hệ thống...");
-
+		// 1. Tự động sinh hoặc nạp Config
 		KyoAnvilConfig.load();
+		System.out.println("[KyoAnvil] Đã nạp thành công hệ thống Đe Server-side!");
 
-		CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
-			registerCommands(dispatcher);
-
-			// THÊM DÒNG NÀY ĐỂ KÍCH HOẠT LỆNH MÀU SẮC
-			KyoColorCommand.register(dispatcher);
-		});
-
-		registerAnvilRestoration();
-
-		LOGGER.info("[Kyo Anvil] Khởi tạo thành công! Sẵn sàng phục vụ.");
-	}
-
-	/**
-	 * Hàm đăng ký lệnh /kyoanvil reload
-	 */
-	private void registerCommands(CommandDispatcher<CommandSourceStack> dispatcher) {
-		dispatcher.register(Commands.literal(MOD_ID)
-				.requires(source -> source.getPlayer() == null || source.getServer().getPlayerList().isOp(source.getPlayer().nameAndId())) // Chỉ Admin/Console mới được dùng // Chỉ Admin/Console mới được dùng
-				.then(Commands.literal("reload")
-						.executes(context -> {
-							KyoAnvilConfig.load();
-							context.getSource().sendSuccess(
-									() -> Component.literal("§a[Kyo Anvil] Đã tải lại file cấu hình (Config) thành công!"),
-									true
-							);
-							return 1;
-						})
-				)
-		);
-	}
-
-	/**
-	 * Hàm xử lý logic Phục hồi độ bền của Đe bằng Khối Sắt
-	 */
-	private void registerAnvilRestoration() {
+		// 2. Tính năng: Cầm Khối Sắt gõ vào đe để phục hồi độ bền
 		UseBlockCallback.EVENT.register((player, world, hand, hitResult) -> {
-			// Bỏ qua nếu là Client hoặc config không cho phép tính năng này
-			if (world.isClientSide() || !KyoAnvilConfig.INSTANCE.allowAnvilRestoration) {
-				return InteractionResult.PASS;
-			}
+			if (!KyoAnvilConfig.enableIronIngotRepair) return InteractionResult.PASS;
+			if (world.isClientSide()) return InteractionResult.PASS;
 
-			var pos = hitResult.getBlockPos();
+			BlockPos pos = hitResult.getBlockPos();
 			BlockState state = world.getBlockState(pos);
-			var stack = player.getItemInHand(hand);
+			ItemStack stack = player.getItemInHand(hand);
 
-			// Kiểm tra nếu người chơi cầm Khối Sắt (Iron Block) trên tay
-			if (stack.is(Items.IRON_BLOCK)) {
-				var currentBlock = state.getBlock();
+			// Kiểm tra nếu cầm Khối Sắt và click vào Đe bị nứt hoặc hỏng
+			if (stack.is(Items.IRON_INGOT)) {
 				BlockState newState = null;
 
-				// Xác định trạng thái mới của đe
-				if (currentBlock == Blocks.DAMAGED_ANVIL) {
+				if (state.is(Blocks.DAMAGED_ANVIL)) {
 					newState = Blocks.CHIPPED_ANVIL.defaultBlockState().setValue(AnvilBlock.FACING, state.getValue(AnvilBlock.FACING));
-				} else if (currentBlock == Blocks.CHIPPED_ANVIL) {
+				} else if (state.is(Blocks.CHIPPED_ANVIL)) {
 					newState = Blocks.ANVIL.defaultBlockState().setValue(AnvilBlock.FACING, state.getValue(AnvilBlock.FACING));
 				}
 
-				// Nếu đe được sửa thành công
 				if (newState != null) {
-					if (!player.getAbilities().instabuild) {
-						stack.shrink(1); // Trừ 1 khối sắt (trừ khi đang ở chế độ Sáng Tạo)
-					}
-					// Phát tiếng búa tạ gõ đe chân thực
-					world.playSound(null, pos, SoundEvents.ANVIL_USE, SoundSource.BLOCKS, 1.0f, 1.0f);
-					// Cập nhật khối block ngoài thế giới
+					// Cập nhật trạng thái đe mới
 					world.setBlockAndUpdate(pos, newState);
+					// Phát âm thanh gõ đe để người chơi nhận biết
+					world.playSound(null, pos, SoundEvents.ANVIL_USE, SoundSource.BLOCKS, 1.0F, 1.0F);
 
+					// Trừ 1 Khối sắt (nếu người chơi ở mode sinh tồn)
+					if (!player.isCreative()) {
+						stack.shrink(1);
+					}
 					return InteractionResult.SUCCESS;
 				}
 			}

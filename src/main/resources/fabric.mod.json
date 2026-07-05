@@ -3,13 +3,13 @@
 	"id": "kyoanvil",
 	"version": "${version}",
 	"name": "Kyo Anvil",
-	"description": "This is an example description! Tell everyone what your mod is about!",
+	"description": "Fix Anvil",
 	"authors": [
 		"Kyo"
 	],
 	"contact": {
-		"homepage": "https://fabricmc.net/",
-		"sources": "https://github.com/FabricMC/fabric-example-mod"
+		"homepage": "https://kyo-series-and-game.web.app/",
+		"sources": "https://github.com/godkyo98/Anvil-Server"
 	},
 	"license": "CC0-1.0",
 	"icon": "assets/kyoanvil/icon.png",
